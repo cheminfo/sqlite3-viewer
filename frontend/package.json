@@ -1,6 +1,6 @@
 {
   "name": "sqlite3-viewer-frontend",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "React + Blueprint component to browse a SQLite database exposed by the sqlite3-viewer-backend Fastify plugin.",
   "type": "module",
   "exports": {
