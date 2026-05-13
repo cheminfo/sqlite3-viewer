@@ -1,0 +1,29 @@
+{
+  "name": "sqlite3-viewer",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Pluggable SQLite database viewer: a Fastify plugin and a React/Blueprint component, published as two npm packages from one repo.",
+  "type": "module",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "check-types": "npm run check-types -w sqlite3-viewer-backend && npm run check-types -w sqlite3-viewer-frontend",
+    "clean": "npm run clean -w sqlite3-viewer-backend && npm run clean -w sqlite3-viewer-frontend",
+    "eslint": "eslint .",
+    "eslint-fix": "eslint . --fix",
+    "prettier": "prettier --check .",
+    "prettier-write": "prettier --write .",
+    "test": "npm run test-only && npm run check-types && npm run eslint && npm run prettier",
+    "test-only": "npm run test-only -w sqlite3-viewer-backend && npm run test-only -w sqlite3-viewer-frontend",
+    "tsc": "npm run tsc -w sqlite3-viewer-backend && npm run tsc -w sqlite3-viewer-frontend"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.0",
+    "eslint-config-cheminfo-react": "^20.0.1",
+    "eslint-config-cheminfo-typescript": "^22.0.0",
+    "prettier": "^3.4.0",
+    "typescript": "^5.9.0"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "extends": "@zakodium/tsconfig",
+  "compilerOptions": {
+    "outDir": "lib"
+  },
+  "include": ["src"]
+}

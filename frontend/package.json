@@ -1,0 +1,44 @@
+{
+  "name": "sqlite3-viewer-frontend",
+  "version": "0.0.0",
+  "description": "React + Blueprint component to browse a SQLite database exposed by the sqlite3-viewer-backend Fastify plugin.",
+  "type": "module",
+  "exports": {
+    ".": "./lib/index.js"
+  },
+  "files": [
+    "lib",
+    "src"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "clean": "rimraf coverage lib",
+    "eslint": "eslint src",
+    "eslint-fix": "eslint src --fix",
+    "prepack": "npm run tsc",
+    "prettier": "prettier --check src",
+    "prettier-write": "prettier --write src",
+    "test": "npm run test-only && npm run check-types && npm run eslint && npm run prettier",
+    "test-only": "vitest run --coverage",
+    "tsc": "npm run clean && npm run tsc-build",
+    "tsc-build": "tsc --project tsconfig.build.json"
+  },
+  "peerDependencies": {
+    "@blueprintjs/core": "^6.0.0",
+    "@blueprintjs/icons": "^6.0.0",
+    "react": "^18.0.0"
+  },
+  "devDependencies": {
+    "@blueprintjs/core": "^6.13.0",
+    "@blueprintjs/icons": "^6.10.0",
+    "@types/react": "^18.3.28",
+    "@vitest/coverage-v8": "^4.1.6",
+    "@zakodium/tsconfig": "^1.0.5",
+    "jsdom": "^25.0.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "rimraf": "^6.0.1",
+    "vitest": "^4.1.6"
+  }
+}

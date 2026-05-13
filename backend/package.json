@@ -1,0 +1,38 @@
+{
+  "name": "sqlite3-viewer-backend",
+  "version": "0.0.0",
+  "description": "Fastify plugin exposing read-only browse endpoints for any SQLite database (tables, rows, schema SVG, fast row counts).",
+  "type": "module",
+  "exports": {
+    ".": "./lib/index.js"
+  },
+  "files": [
+    "lib",
+    "src"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "clean": "rimraf coverage lib",
+    "eslint": "eslint src",
+    "eslint-fix": "eslint src --fix",
+    "prepack": "npm run tsc",
+    "prettier": "prettier --check src",
+    "prettier-write": "prettier --write src",
+    "test": "npm run test-only && npm run check-types && npm run eslint && npm run prettier",
+    "test-only": "vitest run --coverage",
+    "tsc": "npm run clean && npm run tsc-build",
+    "tsc-build": "tsc --project tsconfig.build.json"
+  },
+  "peerDependencies": {
+    "fastify": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@vitest/coverage-v8": "^4.1.6",
+    "@zakodium/tsconfig": "^1.0.5",
+    "fastify": "^5.2.0",
+    "rimraf": "^6.0.1",
+    "vitest": "^4.1.6"
+  }
+}
