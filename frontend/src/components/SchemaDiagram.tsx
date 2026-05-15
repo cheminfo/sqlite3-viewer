@@ -6,6 +6,12 @@ interface SchemaDiagramProps {
   schemaUrl: string;
   onTableClick: (tableName: string) => void;
   selectedTable: string | null;
+  /**
+   * Optional custom `fetch` — useful to inject auth headers. Defaults to
+   * the global `fetch`.
+   * @default globalThis.fetch
+   */
+  fetcher?: typeof fetch;
 }
 
 /**
@@ -21,14 +27,16 @@ export function SchemaDiagram({
   schemaUrl,
   onTableClick,
   selectedTable,
+  fetcher,
 }: SchemaDiagramProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [svgContent, setSvgContent] = useState<string | null>(null);
   const [open, setOpen] = useState(true);
 
   useEffect(() => {
+    const actualFetch = fetcher ?? globalThis.fetch.bind(globalThis);
     let cancelled = false;
-    fetch(schemaUrl)
+    actualFetch(schemaUrl)
       .then(async (response) => {
         if (!response.ok) return null;
         return response.text();
@@ -42,7 +50,7 @@ export function SchemaDiagram({
     return () => {
       cancelled = true;
     };
-  }, [schemaUrl]);
+  }, [schemaUrl, fetcher]);
 
   useEffect(() => {
     const container = containerRef.current;

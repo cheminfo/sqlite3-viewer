@@ -47,12 +47,13 @@ export function DatabaseBrowserPanel({
     [apiBasePath, fetcher],
   );
 
-  return <PanelInner api={api} pageSize={pageSize} />;
+  return <PanelInner api={api} pageSize={pageSize} fetcher={fetcher} />;
 }
 
 interface PanelInnerProps {
   api: ApiClient;
   pageSize: number;
+  fetcher?: typeof fetch;
 }
 
 /**
@@ -60,7 +61,7 @@ interface PanelInnerProps {
  * out so the outer component stays a thin props-to-client adapter.
  * @param props - Component props.
  */
-function PanelInner({ api, pageSize }: PanelInnerProps) {
+function PanelInner({ api, pageSize, fetcher }: PanelInnerProps) {
   const {
     data: tablesData,
     loading: tablesLoading,
@@ -131,6 +132,7 @@ function PanelInner({ api, pageSize }: PanelInnerProps) {
         schemaUrl={api.schemaSvgUrl()}
         onTableClick={handleTableSelect}
         selectedTable={selectedTable}
+        fetcher={fetcher}
       />
       <div style={{ display: 'flex', gap: 16, minHeight: 500 }}>
         <TableList
