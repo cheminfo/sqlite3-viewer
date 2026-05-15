@@ -51,8 +51,9 @@ export function registerDatabaseTablesGet(
 
       let columns: Array<{ name: string; type: string }> = [];
       try {
+        const escapedName = object.name.replaceAll('"', '""');
         columns = db
-          .prepare(`PRAGMA table_info("${object.name}")`)
+          .prepare(`PRAGMA table_info("${escapedName}")`)
           .all() as Array<{ name: string; type: string }>;
       } catch {
         // Ignore — table may have been dropped between the listing and pragma.
