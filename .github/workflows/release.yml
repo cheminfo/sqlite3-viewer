@@ -38,36 +38,44 @@ jobs:
         with:
           token: ${{ secrets.BOT_TOKEN }}
 
-  publish:
+  publish-backend:
     needs: [release-please]
     if: |
       always() &&
       (
-        (needs.release-please.result == 'success' && needs.release-please.outputs.any_released == 'true') ||
-        github.event_name == 'workflow_dispatch'
+        (needs.release-please.result == 'success' && needs.release-please.outputs.backend_released == 'true') ||
+        (github.event_name == 'workflow_dispatch' && inputs.publish_backend)
       )
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - workspace: sqlite3-viewer-backend
-            released: ${{ needs.release-please.outputs.backend_released || inputs.publish_backend }}
-          - workspace: sqlite3-viewer-frontend
-            released: ${{ needs.release-please.outputs.frontend_released || inputs.publish_frontend }}
-    name: publish-${{ matrix.workspace }}
     steps:
-      - uses: actions/checkout@v6
-        if: ${{ matrix.released == 'true' }}
-      - uses: actions/setup-node@v6
-        if: ${{ matrix.released == 'true' }}
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 24.x
           registry-url: 'https://registry.npmjs.org'
       - run: npm ci
-        if: ${{ matrix.released == 'true' }}
-      - run: npm publish --no-ignore-scripts --access public -w ${{ matrix.workspace }}
-        if: ${{ matrix.released == 'true' }}
+      - run: npm publish --no-ignore-scripts --access public -w sqlite3-viewer-backend
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_BOT_TOKEN }}
+
+  publish-frontend:
+    needs: [release-please]
+    if: |
+      always() &&
+      (
+        (needs.release-please.result == 'success' && needs.release-please.outputs.frontend_released == 'true') ||
+        (github.event_name == 'workflow_dispatch' && inputs.publish_frontend)
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          registry-url: 'https://registry.npmjs.org'
+      - run: npm ci
+      - run: npm publish --no-ignore-scripts --access public -w sqlite3-viewer-frontend
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_BOT_TOKEN }}
