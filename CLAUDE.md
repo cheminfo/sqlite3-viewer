@@ -8,14 +8,15 @@ Extracted from the `cheminfo/pipeline` project so the database browser can be re
 
 ## Packages
 
-| Package | npm | Path |
-|---|---|---|
-| `sqlite3-viewer-backend` | published | `backend/` |
+| Package                   | npm       | Path        |
+| ------------------------- | --------- | ----------- |
+| `sqlite3-viewer-backend`  | published | `backend/`  |
 | `sqlite3-viewer-frontend` | published | `frontend/` |
 
 ## Architecture
 
 **Backend** (`sqlite3-viewer-backend`): a Fastify plugin (`sqliteViewerPlugin`) that mounts three read-only routes under `/v1/database` by default:
+
 - `GET /tables` — list all real tables with fast O(1) row counts and column info
 - `GET /tables/:tableName` — paginated rows with optional full-text search
 - `GET /schema` — serve a schema SVG (404 if not configured)
@@ -28,8 +29,8 @@ Row counting is O(1) via a tiered strategy: `exactCountOverrides` → `sqlite_st
 
 ```ts
 interface SqliteViewerPluginOptions {
-  db: DatabaseSync;              // node:sqlite connection
-  schemaSvgPath?: string;        // path to schema SVG (optional)
+  db: DatabaseSync; // node:sqlite connection
+  schemaSvgPath?: string; // path to schema SVG (optional)
   exactCountOverrides?: Record<string, ExactCountFn>; // trigger-maintained stats
   preHandler?: preHandlerHookHandler; // auth middleware
 }
@@ -38,24 +39,33 @@ interface SqliteViewerPluginOptions {
 ## How the pipeline uses it
 
 In `backend/src/server/v1/v1.ts`:
+
 ```ts
 fastify.register(sqliteViewerPlugin, {
   db: fastify.db.db,
   schemaSvgPath: join(import.meta.dirname, '../../../schema/schema.svg'),
   exactCountOverrides: {
-    tasks: (db) => db.prepare('SELECT COALESCE(SUM(count),0) AS total FROM task_stats').get().total,
-    runs:  (db) => db.prepare('SELECT COALESCE(SUM(count),0) AS total FROM run_stats').get().total,
-    molecules: (db) => db.prepare('SELECT COALESCE(SUM(count),0) AS total FROM molecule_stats').get().total,
+    tasks: (db) =>
+      db.prepare('SELECT COALESCE(SUM(count),0) AS total FROM task_stats').get()
+        .total,
+    runs: (db) =>
+      db.prepare('SELECT COALESCE(SUM(count),0) AS total FROM run_stats').get()
+        .total,
+    molecules: (db) =>
+      db
+        .prepare('SELECT COALESCE(SUM(count),0) AS total FROM molecule_stats')
+        .get().total,
   },
-  preHandler: requireAuth,  // pipeline's Bearer-token auth
+  preHandler: requireAuth, // pipeline's Bearer-token auth
 });
 ```
 
 In `frontend/src/App.tsx`:
+
 ```tsx
 <DatabaseBrowserPanel
   apiBasePath="/v1/database"
-  fetcher={authFetch}   // injects Authorization: Bearer <token>
+  fetcher={authFetch} // injects Authorization: Bearer <token>
 />
 ```
 
