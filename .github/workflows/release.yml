@@ -12,9 +12,20 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      publish_backend:
+        description: 'Publish sqlite3-viewer-backend'
+        type: boolean
+        default: false
+      publish_frontend:
+        description: 'Publish sqlite3-viewer-frontend'
+        type: boolean
+        default: false
 
 jobs:
   release-please:
+    if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -28,8 +39,13 @@ jobs:
           token: ${{ secrets.BOT_TOKEN }}
 
   publish:
-    needs: release-please
-    if: ${{ needs.release-please.outputs.any_released == 'true' }}
+    needs: [release-please]
+    if: |
+      always() &&
+      (
+        (needs.release-please.result == 'success' && needs.release-please.outputs.any_released == 'true') ||
+        github.event_name == 'workflow_dispatch'
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
@@ -37,9 +53,9 @@ jobs:
       matrix:
         include:
           - workspace: sqlite3-viewer-backend
-            released: ${{ needs.release-please.outputs.backend_released }}
+            released: ${{ needs.release-please.outputs.backend_released || inputs.publish_backend }}
           - workspace: sqlite3-viewer-frontend
-            released: ${{ needs.release-please.outputs.frontend_released }}
+            released: ${{ needs.release-please.outputs.frontend_released || inputs.publish_frontend }}
     name: publish-${{ matrix.workspace }}
     steps:
       - uses: actions/checkout@v6
