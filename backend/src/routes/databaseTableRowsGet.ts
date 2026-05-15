@@ -172,8 +172,7 @@ function processRows(
             value = text;
           }
         } catch {
-          const byteLength =
-            value instanceof Uint8Array ? value.byteLength : value.byteLength;
+          const byteLength = value.byteLength;
           value = `[BLOB ${String(byteLength)} bytes]`;
         }
       } else if (
