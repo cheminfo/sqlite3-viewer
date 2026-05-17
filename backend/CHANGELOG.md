@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/cheminfo/sqlite3-viewer/compare/sqlite3-viewer-backend-v1.0.1...sqlite3-viewer-backend-v1.1.0) (2026-05-17)
+
+
+### Features
+
+* add periodic PRAGMA optimize support to sqliteViewerPlugin ([4314a70](https://github.com/cheminfo/sqlite3-viewer/commit/4314a705b240018664eb142f88af8a1a8dfec670))
+
 ## [1.0.1](https://github.com/cheminfo/sqlite3-viewer/compare/sqlite3-viewer-backend-v1.0.0...sqlite3-viewer-backend-v1.0.1) (2026-05-15)
 
 
