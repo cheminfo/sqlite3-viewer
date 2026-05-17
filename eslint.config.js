@@ -1,6 +1,7 @@
 import { defineConfig, globalIgnores } from 'eslint/config';
 import cheminfoReact from 'eslint-config-cheminfo-react/base';
 import cheminfoTypescript from 'eslint-config-cheminfo-typescript';
+import globals from 'globals';
 
 export default defineConfig([
   globalIgnores([
@@ -20,6 +21,10 @@ export default defineConfig([
       'jsdoc/require-param': ['warn', { checkDestructured: false }],
       'jsdoc/check-param-names': ['warn', { checkDestructured: false }],
     },
+  },
+  {
+    files: ['backend/**'],
+    languageOptions: { globals: globals.nodeBuiltin },
   },
   {
     files: ['frontend/**/*.{ts,tsx,jsx}'],

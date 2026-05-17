@@ -1,6 +1,7 @@
 import { Callout, HTMLTable, Intent, Spinner, Tag } from '@blueprintjs/core';
 
 import type { TableInfo, TableRowsResponse } from '../types.ts';
+import { formatRowCount } from '../utils/formatRowCount.ts';
 
 import { CellValue } from './CellValue.tsx';
 import { FilterInput } from './FilterInput.tsx';
@@ -171,15 +172,4 @@ export function TableDetail({
       )}
     </div>
   );
-}
-
-/**
- * Format a row count for display, prefixing with "~" when approximate.
- * @param count - Row count value.
- * @param approximate - Whether the count is an estimate.
- * @returns Localized string, optionally prefixed with "~".
- */
-function formatRowCount(count: number, approximate: boolean): string {
-  const formatted = count.toLocaleString();
-  return approximate ? `~${formatted}` : formatted;
 }

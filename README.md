@@ -38,6 +38,8 @@ await fastify.register(sqliteViewerPlugin, {
           .get() as { n: number }
       ).n,
   },
+  // Optional — run PRAGMA optimize every 15 min (default). Set to 0 to disable.
+  optimizeIntervalMs: 15 * 60 * 1000,
   preHandler: (request, reply, done) => {
     // Optional — gate the routes behind the host app's auth middleware.
     if (!request.session) reply.code(401).send({ error: 'Unauthorized' });

@@ -1,7 +1,8 @@
-import { Menu, MenuItem, Tag } from '@blueprintjs/core';
+import { Menu, MenuDivider, MenuItem, Tag } from '@blueprintjs/core';
 import { useMemo } from 'react';
 
 import type { TableInfo } from '../types.ts';
+import { formatRowCount } from '../utils/formatRowCount.ts';
 
 interface TableListProps {
   tables: TableInfo[];
@@ -31,9 +32,7 @@ export function TableList({ tables, selectedTable, onSelect }: TableListProps) {
       }}
     >
       <Menu>
-        <li className="bp5-menu-header">
-          <h6 className="bp5-heading">Tables ({tableItems.length})</h6>
-        </li>
+        <MenuDivider title={`Tables (${tableItems.length})`} />
         {tableItems.map((table) => (
           <MenuItem
             key={table.name}
@@ -50,15 +49,4 @@ export function TableList({ tables, selectedTable, onSelect }: TableListProps) {
       </Menu>
     </div>
   );
-}
-
-/**
- * Format a row count for display, prefixing with "~" when approximate.
- * @param count - Row count value.
- * @param approximate - Whether the count is an estimate.
- * @returns Localized string, optionally prefixed with "~".
- */
-function formatRowCount(count: number, approximate: boolean): string {
-  const formatted = count.toLocaleString();
-  return approximate ? `~${formatted}` : formatted;
 }

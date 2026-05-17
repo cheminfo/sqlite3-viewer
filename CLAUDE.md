@@ -32,6 +32,7 @@ interface SqliteViewerPluginOptions {
   db: DatabaseSync; // node:sqlite connection
   schemaSvgPath?: string; // path to schema SVG (optional)
   exactCountOverrides?: Record<string, ExactCountFn>; // trigger-maintained stats
+  optimizeIntervalMs?: number; // PRAGMA optimize interval in ms (default 900000); 0 = disabled
   preHandler?: preHandlerHookHandler; // auth middleware
 }
 ```

@@ -23,7 +23,8 @@
     "eslint": "^9.39.0",
     "eslint-config-cheminfo-react": "^20.0.1",
     "eslint-config-cheminfo-typescript": "^22.0.0",
-    "prettier": "^3.4.0",
-    "typescript": "^5.9.0"
+    "globals": "^16.0.0",
+    "prettier": "^3.8.3",
+    "typescript": "^6.0.3"
   }
 }
