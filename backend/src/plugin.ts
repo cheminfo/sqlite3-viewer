@@ -12,6 +12,7 @@ import { registerDatabaseTableRowsGet } from './routes/databaseTableRowsGet.ts';
 import { registerDatabaseTablesGet } from './routes/databaseTablesGet.ts';
 
 const DEFAULT_PREFIX = '/v1/database';
+const DEFAULT_OPTIMIZE_INTERVAL_MS = 15 * 60 * 1000;
 
 /** Options for `sqliteViewerPlugin`. */
 export interface SqliteViewerPluginOptions {
@@ -36,6 +37,14 @@ export interface SqliteViewerPluginOptions {
    */
   exactCountOverrides?: Record<string, ExactCountFn>;
   /**
+   * Interval in milliseconds at which `PRAGMA optimize` is run to keep
+   * `sqlite_stat1` fresh for the query planner and row-count estimates.
+   * The pragma also runs once immediately on server ready.
+   * Set to `0` to disable periodic optimization entirely.
+   * @default 900000
+   */
+  optimizeIntervalMs?: number;
+  /**
    * Optional Fastify pre-handler applied to every route in this plugin.
    * Use it to require auth before exposing the database to clients.
    * @default undefined
@@ -59,7 +68,24 @@ export interface SqliteViewerPluginOptions {
 export const sqliteViewerPlugin: FastifyPluginAsync<
   SqliteViewerPluginOptions
 > = async (fastify, options) => {
-  const { db, schemaSvgPath, exactCountOverrides, preHandler } = options;
+  const {
+    db,
+    schemaSvgPath,
+    exactCountOverrides,
+    preHandler,
+    optimizeIntervalMs = DEFAULT_OPTIMIZE_INTERVAL_MS,
+  } = options;
+
+  if (optimizeIntervalMs > 0) {
+    const runOptimize = () => db.exec('PRAGMA optimize');
+    fastify.addHook('onReady', async () => {
+      runOptimize();
+    });
+    const timer = setInterval(runOptimize, optimizeIntervalMs);
+    fastify.addHook('onClose', async () => {
+      clearInterval(timer);
+    });
+  }
 
   const registerRoutes = (instance: FastifyInstance) => {
     registerDatabaseTablesGet(instance, {
