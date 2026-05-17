@@ -1,6 +1,6 @@
 {
   "name": "sqlite3-viewer-backend",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Fastify plugin exposing read-only browse endpoints for any SQLite database (tables, rows, schema SVG, fast row counts).",
   "type": "module",
   "exports": {
