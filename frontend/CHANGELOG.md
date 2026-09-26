@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/cheminfo/sqlite3-viewer/compare/sqlite3-viewer-frontend-v1.0.1...sqlite3-viewer-frontend-v1.1.0) (2026-09-26)
+
+
+### Features
+
+* accept React 19 as a peer ([7066735](https://github.com/cheminfo/sqlite3-viewer/commit/7066735e0d4c31067b53f2d2aec4f8c1e5143fb6))
+
 ## [1.0.1](https://github.com/cheminfo/sqlite3-viewer/compare/sqlite3-viewer-frontend-v1.0.0...sqlite3-viewer-frontend-v1.0.1) (2026-05-15)
 
 
