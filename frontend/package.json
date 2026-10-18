@@ -35,7 +35,6 @@
     "@types/react": "^19.2.18",
     "@vitest/coverage-v8": "^4.1.6",
     "@zakodium/tsconfig": "^1.0.5",
-    "jsdom": "^25.0.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "rimraf": "^6.0.1",
