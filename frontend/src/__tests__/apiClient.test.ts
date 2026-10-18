@@ -38,8 +38,11 @@ test('tableRows() encodes pagination and search into the query string', async ()
     rows: [{ id: 1 }],
     total: 1,
     approximate: false,
+    scanned: 100,
+    complete: true,
     limit: 10,
     offset: 20,
+    maxOffset: 100_000,
   };
   const { fetcher, calls } = makeFetcher(payload);
   const api = createApiClient('/v1/database', fetcher);

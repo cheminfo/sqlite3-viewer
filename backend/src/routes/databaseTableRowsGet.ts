@@ -3,7 +3,8 @@ import type { DatabaseSync } from 'node:sqlite';
 import type { FastifyInstance, preHandlerHookHandler } from 'fastify';
 
 import type { ExactCountFn } from '../fastCount.ts';
-import { loadFastCountSources, resolveFastCount } from '../fastCount.ts';
+import { toJsonSafeInteger } from '../integers.ts';
+import { readTablePage, searchTablePage } from '../tablePage.ts';
 import type { TableRowsResponse } from '../types.ts';
 
 /** Allowed table name pattern to prevent SQL injection. */
@@ -12,21 +13,25 @@ const TABLE_NAME_PATTERN = /^[\w]+$/;
 interface RegisterOptions {
   db: DatabaseSync;
   exactCountOverrides?: Record<string, ExactCountFn>;
+  maxScanRows: number;
+  maxOffset: number;
   preHandler?: preHandlerHookHandler;
 }
 
 /**
  * Register `GET /tables/:tableName` — browse rows of a specific table.
- * Supports pagination via `limit` and `offset`, and optional full-text-style
- * search across all columns via `search`.
+ * Supports pagination via `limit` and `offset` (at most `maxOffset`), and a
+ * `search` across all columns of the first `maxScanRows` rows.
  * @param fastify - Fastify instance.
- * @param options - DB connection plus optional exact-count overrides and auth handler.
+ * @param options - DB connection, scan and offset bounds, plus optional
+ *   exact-count overrides and auth handler.
  */
 export function registerDatabaseTableRowsGet(
   fastify: FastifyInstance,
   options: RegisterOptions,
 ): void {
-  const { db, exactCountOverrides, preHandler } = options;
+  const { db, exactCountOverrides, maxScanRows, maxOffset, preHandler } =
+    options;
 
   fastify.get<{
     Params: { tableName: string };
@@ -54,47 +59,25 @@ export function registerDatabaseTableRowsGet(
 
     const limit = Math.min(Number(request.query.limit) || 50, 500);
     const offset = Number(request.query.offset) || 0;
+    // SQLite walks every row an OFFSET skips, so a large one costs a scan.
+    if (offset > maxOffset) {
+      return reply.status(400).send({
+        error: `Offset ${offset} is above the maximum of ${maxOffset}`,
+      });
+    }
     const searchQuery = request.query.search?.trim() ?? '';
 
     const searchColumns = readColumnNames(db, tableName);
 
-    let whereClause = '';
-    const searchParams: string[] = [];
-    if (searchQuery && searchColumns.length > 0) {
-      const likePattern = `%${searchQuery}%`;
-      const conditions = searchColumns.map(
-        (column) => `CAST("${column}" AS TEXT) LIKE ?`,
-      );
-      whereClause = `WHERE ${conditions.join(' OR ')}`;
-      searchParams.push(...searchColumns.map(() => likePattern));
-    }
-
-    // Resolve total. With no search we use the tiered fast-count helper
-    // (never `COUNT(*)`) — counting a 10 TB table would freeze the panel.
-    // With a search the COUNT is bounded by the match set, so we run it
-    // directly; the user explicitly asked for a filter.
-    let total: number;
-    let approximate: boolean;
-    if (searchQuery && whereClause) {
-      const countRow = db
-        .prepare(`SELECT COUNT(*) AS count FROM "${tableName}" ${whereClause}`)
-        .get(...searchParams) as { count: number };
-      total = countRow.count;
-      approximate = false;
-    } else {
-      const fast = resolveFastCount(
-        db,
-        tableName,
-        loadFastCountSources(db),
-        exactCountOverrides,
-      );
-      total = fast.rowCount;
-      approximate = fast.approximate;
-    }
-
-    const rows = db
-      .prepare(`SELECT * FROM "${tableName}" ${whereClause} LIMIT ? OFFSET ?`)
-      .all(...searchParams, limit, offset) as Array<Record<string, unknown>>;
+    const { rows, total, approximate, scanned, complete } =
+      searchQuery && searchColumns.length > 0
+        ? searchTablePage(db, tableName, searchColumns, {
+            search: searchQuery,
+            limit,
+            offset,
+            maxScanRows,
+          })
+        : readTablePage(db, tableName, { limit, offset, exactCountOverrides });
 
     const columnNames =
       searchColumns.length > 0
@@ -111,8 +94,11 @@ export function registerDatabaseTableRowsGet(
       rows: processedRows,
       total,
       approximate,
+      scanned,
+      complete,
       limit,
       offset,
+      maxOffset,
     };
     return response;
   });
@@ -145,23 +131,28 @@ function readColumnNames(db: DatabaseSync, tableName: string): string[] {
 }
 
 /**
- * Decode BLOB columns as UTF-8 (and JSON-parse them if they look like JSON),
- * and JSON-parse text columns whose value is a JSON object/array literal.
- * Unmatched values are passed through unchanged.
- * @param rows - Raw rows from the prepared statement.
+ * Turn bigints into numbers or exact decimal strings, decode BLOB columns as
+ * UTF-8 (and JSON-parse them if they look like JSON), and JSON-parse text
+ * columns whose value is a JSON object/array literal. Unmatched values are
+ * passed through unchanged.
+ * @param rows - Raw rows, read with `setReadBigInts(true)`.
  * @param columnNames - Column names to project, in order.
- * @returns New rows with BLOBs decoded and JSON strings parsed.
+ * @returns New rows with bigints converted, BLOBs decoded and JSON strings
+ *   parsed.
  */
 function processRows(
   rows: Array<Record<string, unknown>>,
   columnNames: string[],
 ): Array<Record<string, unknown>> {
-  const processed: Array<Record<string, unknown>> = [];
-  for (const row of rows) {
+  const processed = new Array<Record<string, unknown>>(rows.length);
+  for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+    const row = rows[rowIndex] as Record<string, unknown>;
     const processedRow: Record<string, unknown> = {};
     for (const key of columnNames) {
       let value = row[key];
-      if (value instanceof ArrayBuffer || value instanceof Uint8Array) {
+      if (typeof value === 'bigint') {
+        value = toJsonSafeInteger(value);
+      } else if (value instanceof ArrayBuffer || value instanceof Uint8Array) {
         try {
           const buffer =
             value instanceof Uint8Array ? value : new Uint8Array(value);
@@ -188,7 +179,7 @@ function processRows(
       }
       processedRow[key] = value;
     }
-    processed.push(processedRow);
+    processed[rowIndex] = processedRow;
   }
   return processed;
 }

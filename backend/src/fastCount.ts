@@ -1,5 +1,7 @@
 import type { DatabaseSync } from 'node:sqlite';
 
+import { toJsonSafeInteger } from './integers.ts';
+
 /** Resolved row count along with whether it is exact or approximate. */
 export interface FastCountResult {
   rowCount: number;
@@ -49,11 +51,15 @@ export function loadFastCountSources(db: DatabaseSync): FastCountSources {
 
   const sequenceCounts = new Map<string, number>();
   try {
-    const seqRows = db
-      .prepare(`SELECT name, seq FROM sqlite_sequence`)
-      .all() as Array<{ name: string; seq: number }>;
+    const statement = db.prepare(`SELECT name, seq FROM sqlite_sequence`);
+    statement.setReadBigInts(true);
+    const seqRows = statement.all() as Array<{ name: string; seq: unknown }>;
     for (const row of seqRows) {
-      sequenceCounts.set(row.name, row.seq);
+      const seq =
+        typeof row.seq === 'bigint' ? toJsonSafeInteger(row.seq) : row.seq;
+      // A string is a sequence past 2^53, which only an id set by hand
+      // reaches: it bounds no row count, so the table falls to the next tier.
+      if (typeof seq === 'number') sequenceCounts.set(row.name, seq);
     }
   } catch {
     // `sqlite_sequence` only exists if at least one AUTOINCREMENT table exists.

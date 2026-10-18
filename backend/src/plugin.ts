@@ -13,6 +13,8 @@ import { registerDatabaseTablesGet } from './routes/databaseTablesGet.ts';
 
 const DEFAULT_PREFIX = '/v1/database';
 const DEFAULT_OPTIMIZE_INTERVAL_MS = 15 * 60 * 1000;
+const DEFAULT_MAX_SCAN_ROWS = 100_000;
+const DEFAULT_MAX_OFFSET = 100_000;
 
 /** Options for `sqliteViewerPlugin`. */
 export interface SqliteViewerPluginOptions {
@@ -41,9 +43,25 @@ export interface SqliteViewerPluginOptions {
    * `sqlite_stat1` fresh for the query planner and row-count estimates.
    * The pragma also runs once immediately on server ready.
    * Set to `0` to disable periodic optimization entirely.
+   * A failure, e.g. on a read-only or busy connection, is logged as a
+   * warning and never thrown.
    * @default 900000
    */
   optimizeIntervalMs?: number;
+  /**
+   * Rows a `search` examines, read from the start of the table in its
+   * natural order. Both the count and the page stop at this window, so a
+   * search costs the same on a table of any size; the response says whether
+   * the window covered the whole table.
+   * @default 100000
+   */
+  maxScanRows?: number;
+  /**
+   * Largest `offset` the rows route accepts; a request past it answers 400.
+   * SQLite walks every skipped row, so a large offset costs a table scan.
+   * @default 100000
+   */
+  maxOffset?: number;
   /**
    * Optional Fastify pre-handler applied to every route in this plugin.
    * Use it to require auth before exposing the database to clients.
@@ -75,9 +93,27 @@ export const sqliteViewerPlugin: FastifyPluginAsync<
     preHandler,
     optimizeIntervalMs = DEFAULT_OPTIMIZE_INTERVAL_MS,
   } = options;
+  const maxScanRows = resolveRowBound(
+    'maxScanRows',
+    options.maxScanRows,
+    DEFAULT_MAX_SCAN_ROWS,
+  );
+  const maxOffset = resolveRowBound(
+    'maxOffset',
+    options.maxOffset,
+    DEFAULT_MAX_OFFSET,
+  );
 
   if (optimizeIntervalMs > 0) {
-    const runOptimize = () => db.exec('PRAGMA optimize');
+    // A throw inside the interval would be an uncaught exception that ends
+    // the host process.
+    const runOptimize = () => {
+      try {
+        db.exec('PRAGMA optimize');
+      } catch (error) {
+        fastify.log.warn({ err: error }, 'PRAGMA optimize failed');
+      }
+    };
     fastify.addHook('onReady', async () => {
       runOptimize();
     });
@@ -96,6 +132,8 @@ export const sqliteViewerPlugin: FastifyPluginAsync<
     registerDatabaseTableRowsGet(instance, {
       db,
       exactCountOverrides,
+      maxScanRows,
+      maxOffset,
       preHandler,
     });
     registerDatabaseSchemaGet(instance, { schemaSvgPath, preHandler });
@@ -115,3 +153,25 @@ export const sqliteViewerPlugin: FastifyPluginAsync<
     registerRoutes(fastify);
   }
 };
+
+/**
+ * Resolve a row bound, refusing a value SQLite cannot bind as a `LIMIT` and
+ * JSON cannot carry, such as `Infinity`.
+ * @param name - Option name, for the error message.
+ * @param value - Value the host passed, if any.
+ * @param fallback - Default used when the host passed nothing.
+ * @returns The bound to apply.
+ */
+function resolveRowBound(
+  name: string,
+  value: number | undefined,
+  fallback: number,
+): number {
+  const bound = value ?? fallback;
+  if (!Number.isSafeInteger(bound) || bound < 0) {
+    throw new RangeError(
+      `${name} must be a non-negative integer, got ${String(bound)}`,
+    );
+  }
+  return bound;
+}

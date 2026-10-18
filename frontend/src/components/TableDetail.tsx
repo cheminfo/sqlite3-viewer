@@ -1,7 +1,15 @@
-import { Callout, HTMLTable, Intent, Spinner, Tag } from '@blueprintjs/core';
+import {
+  Callout,
+  Classes,
+  HTMLTable,
+  Intent,
+  Spinner,
+  Tag,
+} from '@blueprintjs/core';
 
 import type { TableInfo, TableRowsResponse } from '../types.ts';
 import { formatRowCount } from '../utils/formatRowCount.ts';
+import { reachablePageCount } from '../utils/reachablePageCount.ts';
 
 import { CellValue } from './CellValue.tsx';
 import { FilterInput } from './FilterInput.tsx';
@@ -42,6 +50,9 @@ export function TableDetail({
   const columns = rowsData?.columns ?? [];
   const rows = rowsData?.rows ?? [];
   const total = rowsData?.total ?? 0;
+  const maxNavigablePages = rowsData
+    ? reachablePageCount(rowsData.maxOffset, pageSize)
+    : undefined;
 
   return (
     <div>
@@ -90,6 +101,15 @@ export function TableDetail({
         style={{ marginBottom: 12 }}
       />
 
+      {rowsData?.complete === false && (
+        <div
+          className={`${Classes.TEXT_MUTED} ${Classes.TEXT_SMALL}`}
+          style={{ marginBottom: 12 }}
+        >
+          Searched the first {rowsData.scanned.toLocaleString()} rows.
+        </div>
+      )}
+
       {rowsError && (
         <Callout intent={Intent.DANGER} style={{ marginBottom: 12 }}>
           {rowsError}
@@ -105,6 +125,7 @@ export function TableDetail({
             pageSize={pageSize}
             total={total}
             onOffsetChange={onOffsetChange}
+            maxNavigablePages={maxNavigablePages}
           />
 
           <div style={{ overflowX: 'auto' }}>
@@ -167,6 +188,7 @@ export function TableDetail({
             pageSize={pageSize}
             total={total}
             onOffsetChange={onOffsetChange}
+            maxNavigablePages={maxNavigablePages}
           />
         </>
       )}

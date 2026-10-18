@@ -1,4 +1,4 @@
-import { Button, ButtonGroup } from '@blueprintjs/core';
+import { AnchorButton, Button, ButtonGroup } from '@blueprintjs/core';
 import type { ReactNode } from 'react';
 import { useMemo } from 'react';
 
@@ -14,7 +14,8 @@ interface PaginationProps {
   /**
    * Maximum number of navigable pages. When the real page count exceeds
    * this value, navigation is capped here to avoid triggering extremely
-   * slow offset scans on large datasets.
+   * slow offset scans on large datasets, and a trailing ellipsis marks the
+   * pages past the cap.
    * @default unlimited
    */
   maxNavigablePages?: number;
@@ -22,7 +23,8 @@ interface PaginationProps {
 
 /**
  * Pagination bar with previous/next buttons and page-number jump buttons.
- * Shows up to 5 pages before and 5 pages after the current page.
+ * Shows up to 5 pages before and 5 pages after the current page, and never
+ * offers a page past `maxNavigablePages`.
  * @param props - Component props.
  */
 export function Pagination({
@@ -34,18 +36,18 @@ export function Pagination({
 }: PaginationProps) {
   const currentPage = Math.floor(offset / pageSize) + 1;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const navigablePages =
+  const lastPage =
     maxNavigablePages !== undefined
-      ? Math.min(totalPages, maxNavigablePages)
+      ? Math.max(1, Math.min(totalPages, maxNavigablePages))
       : totalPages;
 
   const pageNumbers = useMemo(() => {
     const pages: number[] = [];
     const start = Math.max(1, currentPage - 5);
-    const end = Math.min(navigablePages, currentPage + 5);
+    const end = Math.min(lastPage, currentPage + 5);
     for (let page = start; page <= end; page++) pages.push(page);
     return pages;
-  }, [currentPage, navigablePages]);
+  }, [currentPage, lastPage]);
 
   if (totalPages <= 1) return null;
 
@@ -69,7 +71,8 @@ export function Pagination({
       <PaginationButtons
         pageNumbers={pageNumbers}
         currentPage={currentPage}
-        totalPages={navigablePages}
+        lastPage={lastPage}
+        hasUnreachablePages={lastPage < totalPages}
         pageSize={pageSize}
         onOffsetChange={onOffsetChange}
       />
@@ -77,7 +80,7 @@ export function Pagination({
         size="small"
         variant="minimal"
         icon="chevron-right"
-        disabled={currentPage === navigablePages}
+        disabled={currentPage >= lastPage}
         onClick={() => onOffsetChange(offset + pageSize)}
       />
     </div>
@@ -87,29 +90,34 @@ export function Pagination({
 interface PaginationButtonsProps {
   pageNumbers: number[];
   currentPage: number;
-  totalPages: number;
+  /** Last page the pager can open. */
+  lastPage: number;
+  /** True when pages past `lastPage` exist but cannot be opened. */
+  hasUnreachablePages: boolean;
   pageSize: number;
   onOffsetChange: (offset: number) => void;
 }
 
 /**
  * Inner button group rendering page-number buttons with leading/trailing
- * ellipses when the visible window is offset from the first/last page.
+ * ellipses when the visible window is offset from the first/last page, and
+ * a final ellipsis when pages exist past the last one that can be opened.
  * @param props - Component props.
  */
 function PaginationButtons({
   pageNumbers,
   currentPage,
-  totalPages,
+  lastPage,
+  hasUnreachablePages,
   pageSize,
   onOffsetChange,
 }: PaginationButtonsProps) {
-  const firstPage = pageNumbers[0];
-  const lastPage = pageNumbers.at(-1);
+  const firstShown = pageNumbers[0];
+  const lastShown = pageNumbers.at(-1);
 
   const buttons: ReactNode[] = [];
 
-  if (firstPage !== undefined && firstPage > 1) {
+  if (firstShown !== undefined && firstShown > 1) {
     buttons.push(
       <Button
         key="first"
@@ -120,7 +128,7 @@ function PaginationButtons({
         1
       </Button>,
     );
-    if (firstPage > 2) {
+    if (firstShown > 2) {
       buttons.push(
         <Button key="start-ellipsis" size="small" variant="minimal" disabled>
           …
@@ -143,8 +151,8 @@ function PaginationButtons({
     );
   }
 
-  if (lastPage !== undefined && lastPage < totalPages) {
-    if (lastPage < totalPages - 1) {
+  if (lastShown !== undefined && lastShown < lastPage) {
+    if (lastShown < lastPage - 1) {
       buttons.push(
         <Button key="end-ellipsis" size="small" variant="minimal" disabled>
           …
@@ -156,10 +164,25 @@ function PaginationButtons({
         key="last"
         size="small"
         variant="minimal"
-        onClick={() => onOffsetChange((totalPages - 1) * pageSize)}
+        onClick={() => onOffsetChange((lastPage - 1) * pageSize)}
       >
-        {totalPages}
+        {lastPage}
       </Button>,
+    );
+  }
+
+  if (hasUnreachablePages) {
+    // An AnchorButton keeps its title on hover while disabled; a Button does not.
+    buttons.push(
+      <AnchorButton
+        key="unreachable"
+        size="small"
+        variant="minimal"
+        disabled
+        title={`Only the first ${lastPage.toLocaleString()} pages can be opened`}
+      >
+        …
+      </AnchorButton>,
     );
   }
 

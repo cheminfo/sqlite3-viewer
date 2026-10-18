@@ -84,8 +84,11 @@ test('GET /db/tables/:name paginates rows and parses JSON-looking strings', asyn
     // full because `LIMIT/OFFSET` operates on the actual table.
     total: 0,
     approximate: true,
+    scanned: 0,
+    complete: true,
     limit: 10,
     offset: 0,
+    maxOffset: 100_000,
   });
 });
 

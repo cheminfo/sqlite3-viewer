@@ -18,10 +18,10 @@ Extracted from the `cheminfo/pipeline` project so the database browser can be re
 **Backend** (`sqlite3-viewer-backend`): a Fastify plugin (`sqliteViewerPlugin`) that mounts three read-only routes under `/v1/database` by default:
 
 - `GET /tables` — list all real tables with fast O(1) row counts and column info
-- `GET /tables/:tableName` — paginated rows with optional full-text search
+- `GET /tables/:tableName` — paginated rows (offset ≤ `maxOffset`) with an optional search over the first `maxScanRows` rows
 - `GET /schema` — serve a schema SVG (404 if not configured)
 
-Row counting is O(1) via a tiered strategy: `exactCountOverrides` → `sqlite_stat1` → `sqlite_sequence` → 0. Never runs `SELECT COUNT(*)`.
+Row counting is O(1) via a tiered strategy: `exactCountOverrides` → `sqlite_stat1` → `sqlite_sequence` → 0. Never runs an unbounded `SELECT COUNT(*)`: a search counts within its `maxScanRows` window. Rows are read with `setReadBigInts(true)`; an INTEGER outside ±(2^53 − 1) is sent as its exact decimal string.
 
 **Frontend** (`sqlite3-viewer-frontend`): a React component (`DatabaseBrowserPanel`) built on BlueprintJS 6 and React 18. Takes `apiBasePath`, `fetcher` (for auth injection), and optional `pageSize`.
 
@@ -32,7 +32,9 @@ interface SqliteViewerPluginOptions {
   db: DatabaseSync; // node:sqlite connection
   schemaSvgPath?: string; // path to schema SVG (optional)
   exactCountOverrides?: Record<string, ExactCountFn>; // trigger-maintained stats
-  optimizeIntervalMs?: number; // PRAGMA optimize interval in ms (default 900000); 0 = disabled
+  optimizeIntervalMs?: number; // PRAGMA optimize interval in ms (default 900000); 0 = disabled; failures are logged, never thrown
+  maxScanRows?: number; // rows a search examines, from the start of the table (default 100000)
+  maxOffset?: number; // largest offset accepted; past it the route answers 400 (default 100000)
   preHandler?: preHandlerHookHandler; // auth middleware
 }
 ```

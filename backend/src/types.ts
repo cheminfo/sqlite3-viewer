@@ -29,10 +29,27 @@ export interface TablesResponse {
 export interface TableRowsResponse {
   tableName: string;
   columns: string[];
+  /**
+   * The page. An INTEGER outside ±(2^53 − 1), which a JavaScript number
+   * cannot hold exactly, comes as its exact decimal string.
+   */
   rows: Array<Record<string, unknown>>;
+  /** With a `search`, the matches in the scanned rows; otherwise the fast row count. */
   total: number;
-  /** True when `total` is an estimate (no `search` was supplied). */
+  /**
+   * True when `total` is an estimate: a `sqlite_stat1` or `sqlite_sequence`
+   * count, or a `search` that did not cover the whole table.
+   */
   approximate: boolean;
+  /** Rows the `search` examined, from the start of the table; `0` without a `search`. */
+  scanned: number;
+  /**
+   * False when the `search` stopped at `maxScanRows` before the end of the
+   * table; `true` without a `search`.
+   */
+  complete: boolean;
   limit: number;
   offset: number;
+  /** Largest `offset` the server accepts; past it the route answers 400. */
+  maxOffset: number;
 }
