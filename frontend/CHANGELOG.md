@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/cheminfo/sqlite3-viewer/compare/sqlite3-viewer-frontend-v1.1.0...sqlite3-viewer-frontend-v1.2.0) (2026-10-18)
+
+
+### Features
+
+* bound searches and pages, and read 64-bit integers ([59597cb](https://github.com/cheminfo/sqlite3-viewer/commit/59597cb9eb712dd0701bce6f36ead130c0f8eb87))
+
 ## [1.1.0](https://github.com/cheminfo/sqlite3-viewer/compare/sqlite3-viewer-frontend-v1.0.1...sqlite3-viewer-frontend-v1.1.0) (2026-09-26)
 
 
